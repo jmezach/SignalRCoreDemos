@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <title>Socket Images</title>
+</head>
+<body>
+    <div id="container">
+        <video id="video"></video>
+        <canvas id="canvas" style="display: block; width: 150px; height: 70px;"></canvas>
+    </div>
+    
+    <button id="capture">Capture</button>
+
+    <img id="output" />
+
+    <script src='/signalr-client.js'></script>
+    <script>
+        var streaming = false,
+            video = document.querySelector("#video"),
+            canvas = document.querySelector("#canvas"),
+            output = document.querySelector("#output"),
+            capture = document.querySelector("#capture"),
+            context = canvas.getContext("2d");
+
+        canvas.width = 150;
+        canvas.height = 70;
+
+        var conn = new signalR.Connection("http://localhost:5000/image");
+        conn.onDataReceived = (data) => {
+            console.log(data);
+            output.src = URL.createObjectURL(data);
+        }
+
+        navigator.getUserMedia({
+            video: true,
+            audio: false
+        }, (stream) => {
+            video.srcObject = stream;
+            video.play();
+        }, (failure) => {
+            console.log(failure);
+        });
+
+        video.addEventListener("play", function() {
+            draw(this, context, 150, 70);
+        });
+
+        capture.addEventListener("click", evt => {
+           conn.start()
+               .then(() => {
+                    console.log("Connected");
+               })
+               .catch((err) => {
+                    console.log(err);
+               })
+        });
+
+        function draw(v, c, w, h) {
+            if(v.paused || v.ended) return false;
+            c.drawImage(v, 0, 0, w, h);
+
+            if (conn.connectionState === 2) {
+                sendImageData();
+            }
+
+            setTimeout(draw, 250, v, c, w, h);
+        }
+
+        function sendImageData() {
+            var dataUri = canvas.toDataURL('img/png');
+            var data = dataUri.split(',')[1];
+            var mimeType = dataUri.split(';')[0].slice(5)
+
+            var bytes = window.atob(data);
+            var buf = new ArrayBuffer(bytes.length);
+            var arr = new Uint8Array(buf);
+
+            for (var i = 0; i < bytes.length; i++) {
+                arr[i] = bytes.charCodeAt(i);
+            }
+
+            conn.send(arr);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,66 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+<input type="text" id="message" />
+<input type="button" id="send" value="send" />
+
+<ul id="messages"></ul>
+
+<ul id="users"></ul>
+
+<script src="/lib/signalr-client.js"></script>
+<script>
+    var conn = new signalR.HubConnection(`https://${document.location.host}/chat`);
+    conn.on("Send", (user, message) => {
+        var li = document.createElement("li");
+        li.innerText = user + ": " + message;
+        document.getElementById("messages").appendChild(li);
+    });
+
+    conn.on("SetUsersOnline", (users) => {
+        for (let user of users) {
+            var li = document.createElement("li");
+            li.innerText = user.ConnectionId + " - " + user.Name;
+            li.id = user.ConnectionId;
+            document.getElementById("users").appendChild(li);
+        }
+    })
+
+    conn.on("UsersJoined", (users) => {
+        for (let user of users) {
+            var li = document.createElement("li");
+            li.innerText = user.Name + " joined";
+            document.getElementById("messages").appendChild(li);
+
+            var userLi = document.createElement("li");
+            userLi.innerText = user.ConnectionId + " - " + user.Name;
+            userLi.id = user.ConnectionId;
+            document.getElementById("users").appendChild(userLi);
+        }
+    });
+
+    conn.on("UsersLeft", (users) => {
+        for (let user of users) {
+            var li = document.createElement("li");
+            li.innerText = user.Name + " left";
+            document.getElementById("messages").appendChild(li);
+
+            var userLi = document.getElementById(user.ConnectionId);
+            document.getElementById("users").removeChild(userLi);
+        }
+    })
+
+    conn.start()
+        .then(() => {
+            console.log("Started");
+        })
+        .catch((err) => {
+            console.log(err);
+        });
+
+    document.getElementById("send").addEventListener("click", evt => {
+        var data = document.getElementById("message").value;
+        conn.invoke("Send", data);
+    });
+</script>
