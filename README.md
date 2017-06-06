@@ -2,6 +2,9 @@
 Repo containing various demos with SignalR Core. These were pretty much recreated from the talk by Damian Edwards and David
 Fowler given at [Microsoft Build 2017](https://channel9.msdn.com/events/Build/2017/B8078).
 
+**Note:** You'll need to have .NET Core 2.0 preview 1 installed on yourt machine to run these demos. I've build and tested
+these on OSX, but they should work on Windows and Linux as well.
+
 ## SignalRCore
 This is a demo of the most basic things you'll need to setup in order to get started with SignalR Core. Its an empty ASP.NET
 Core application with SignalR Core added to it and a client written in pure JavaScript.
